@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Infinity</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(45deg, #0a0a0a, #1a1a2e, #16213e);
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            touch-action: none;
+        }
+        
+        canvas {
+            display: block;
+            cursor: pointer;
+        }
+        
+        .info {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            text-align: center;
+            z-index: 10;
+            opacity: 0.8;
+        }
+        
+        .info h1 {
+            margin: 0;
+            font-size: 2rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .info p {
+            margin: 5px 0 0 0;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h1>∞ The Infinity ∞</h1>
+        <p>Touch to create infinite magic</p>
+    </div>
+    <canvas id="canvas"></canvas>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Particles array
+        const particles = [];
+        const maxParticles = 100;
+        
+        // Animation variables
+        let time = 0;
+        let mouseX = canvas.width / 2;
+        let mouseY = canvas.height / 2;
+        let isInteracting = false;
+        
+        // Particle class
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.life = 1;
+                this.decay = Math.random() * 0.02 + 0.01;
+                this.size = Math.random() * 3 + 1;
+                this.color = `hsl(${Math.random() * 60 + 180}, 70%, 60%)`;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= this.decay;
+                this.vx *= 0.99;
+                this.vy *= 0.99;
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * this.life, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        
+        // Create infinity path
+        function getInfinityPoint(t, centerX, centerY, scale = 100) {
+            const x = centerX + scale * Math.cos(t) / (1 + Math.sin(t) * Math.sin(t));
+            const y = centerY + scale * Math.sin(t) * Math.cos(t) / (1 + Math.sin(t) * Math.sin(t));
+            return { x, y };
+        }
+        
+        // Add particles along infinity curve
+        function addInfinityParticles() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const scale = Math.min(canvas.width, canvas.height) * 0.15;
+            
+            for (let i = 0; i < 8; i++) {
+                const t = time * 0.02 + i * Math.PI / 4;
+                const point = getInfinityPoint(t, centerX, centerY, scale);
+                
+                if (particles.length < maxParticles) {
+                    particles.push(new Particle(point.x, point.y));
+                }
+            }
+        }
+        
+        // Draw infinity symbol
+        function drawInfinity() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const scale = Math.min(canvas.width, canvas.height) * 0.15;
+            
+            ctx.strokeStyle = `hsl(${time * 2 % 360}, 70%, 60%)`;
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = ctx.strokeStyle;
+            
+            ctx.beginPath();
+            
+            for (let t = 0; t <= 2 * Math.PI; t += 0.01) {
+                const point = getInfinityPoint(t, centerX, centerY, scale);
+                
+                if (t === 0) {
+                    ctx.moveTo(point.x, point.y);
+                } else {
+                    ctx.lineTo(point.x, point.y);
+                }
+            }
+            
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+        
+        // Handle touch/mouse interaction
+        function handleInteraction(clientX, clientY) {
+            mouseX = clientX;
+            mouseY = clientY;
+            isInteracting = true;
+            
+            // Add burst of particles at touch point
+            for (let i = 0; i < 10; i++) {
+                particles.push(new Particle(mouseX, mouseY));
+            }
+        }
+        
+        // Event listeners
+        canvas.addEventListener('mousedown', (e) => {
+            handleInteraction(e.clientX, e.clientY);
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (e.buttons === 1) {
+                handleInteraction(e.clientX, e.clientY);
+            }
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            isInteracting = false;
+        });
+        
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            handleInteraction(touch.clientX, touch.clientY);
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            handleInteraction(touch.clientX, touch.clientY);
+        });
+        
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            isInteracting = false;
+        });
+        
+        // Animation loop
+        function animate() {
+            // Clear canvas with fade effect
+            ctx.fillStyle = 'rgba(10, 10, 10, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            time++;
+            
+            // Draw infinity symbol
+            drawInfinity();
+            
+            // Add particles along infinity path
+            if (time % 3 === 0) {
+                addInfinityParticles();
+            }
+            
+            // Update and draw particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const particle = particles[i];
+                particle.update();
+                particle.draw();
+                
+                // Remove dead particles
+                if (particle.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+            
+            // Add floating particles
+            if (Math.random() < 0.1) {
+                particles.push(new Particle(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height
+                ));
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // Start animation
+        animate();
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
+
